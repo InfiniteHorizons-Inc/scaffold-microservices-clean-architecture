@@ -21,10 +21,10 @@ class ScaffoldPluginFunctionalTest {
         File buildFile = new File(testProjectDir, "build.gradle");
 
         try (FileWriter writer = new FileWriter(buildFile)) {
-            writer.write("plugins { id 'com.infinitehorizons.scaffold.microservices' }\n");
+            writer.write("plugins { id 'co.infinitehorizons.scaffold.microservices' }\n");
 
             writer.write("scaffoldMicroServices {\n");
-            writer.write("    packageName = 'com.infinitehorizons.demo'\n");
+            writer.write("    packageName = 'co.infinitehorizons.demo'\n");
             writer.write("    companyName = 'Infinite Horizons Inc.'\n");
             writer.write("    projectName = 'Demo Ecosystem'\n");
             writer.write("}\n");
@@ -40,6 +40,6 @@ class ScaffoldPluginFunctionalTest {
         System.out.println("LOGS DEL TEST:\n" + output);
 
         assertTrue(output.contains("Infinite Horizons Inc."), "Debe mostrar el nombre de la empresa");
-        assertTrue(output.contains("com.infinitehorizons.demo"), "Debe mostrar el paquete configurado");
+        assertTrue(output.contains("co.infinitehorizons.demo"), "Debe mostrar el paquete configurado");
     }
 }
