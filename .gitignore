@@ -307,7 +307,8 @@ Temporary Items
 *.hprof
 
 #gradle wrapper
-gradle/
+gradle/**
+!gradle/libs.versions.toml
 
 # Visual Studio Code
 .vscode
