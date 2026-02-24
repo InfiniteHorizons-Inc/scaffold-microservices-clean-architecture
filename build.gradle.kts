@@ -11,7 +11,7 @@ plugins {
 
 }
 
-group = "com.infinitehorizons.scaffold.microservices"
+group = "co.infinitehorizons.scaffold.microservices"
 version = System.getProperty("version")
 description = "Plugin to generate microservice ecosystems with Clean Architecture."
 
@@ -52,9 +52,9 @@ gradlePlugin {
 
     plugins {
         register("scaffoldMicroServices") {
-            id = "com.infinitehorizons.scaffold.microservices"
+            id = "co.infinitehorizons.scaffold.microservices"
             displayName = pluginName
-            implementationClass = "com.infinitehorizons.scaffold.microservices.ScaffoldMicroservicesPlugin"
+            implementationClass = "co.infinitehorizons.scaffold.microservices.ScaffoldMicroservicesPlugin"
             description = project.description
             tags.addAll("scaffold", "microservices", "clean architecture", "gradle", "plugin")
         }

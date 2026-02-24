@@ -1,0 +1,153 @@
+language: en-US
+
+early_access: false
+
+tone_instructions: >-
+  Java architect expert. Be technical and direct. Prioritize bugs, security, and performance. It demands SOLID, DRY and KISS. Detects antipatterns and suggests design patterns. Includes refactoring code and sorts by severity.
+
+reviews:
+
+  profile: assertive
+  request_changes_workflow: false
+
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+  review_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  review_details: false
+  commit_status: true
+  fail_commit_status: false
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  suggested_reviewers: true
+  auto_apply_labels: false
+  auto_assign_reviewers: false
+
+  auto_title_placeholder: "[Title]:"
+  poem: false
+
+  path_filters:
+    - "!**/*.md"
+    - "!docs/**"
+    - "!.github/dependabot.yml"
+    - "!**/test/**"
+    - "!**/*Test.java"
+    - "!**/application*.yml"
+    - "!**/application*.properties"
+    - "!**/application*.yaml"
+    - "!**/application-local.yml"
+    - "!**/application-dev.yml"
+    - "!**/application-prod.yml"
+
+  # Code Analysis Tools
+  tools:
+
+    # Static code analysis
+    pmd:
+      enabled: true
+
+    # Security - Advanced static analysis
+    semgrep:
+      enabled: true
+    opengrep:
+      enabled: true
+
+    # Security - Secret detection
+    trufflehog:
+      enabled: true
+    gitleaks:
+      enabled: true
+
+    # Security - Infrastructure as Code
+    checkov:
+      enabled: true
+    trivy:
+      enabled: true
+
+    # Security - Dependency vulnerability
+    osvScanner:
+      enabled: true
+
+    # Infrastructure tools
+    hadolint:
+      enabled: true
+    shellcheck:
+      enabled: true
+
+    ast-grep:
+      essential_rules: true
+      rule_dirs: []
+      util_dirs: []
+
+
+  # Mandatory checks before merge
+  pre_merge_checks:
+    docstrings:
+      mode: warning
+      threshold: 80
+    custom_checks:
+      - mode: error
+        name: "System.out/err in production code"
+        instructions: "Checking for production code using System.out or System.err instead of a standard logger (SLF4J, Logback) fails."
+      - mode: error
+        name: "Hardcoded credentials"
+        instructions: "Detecting hardcoded credentials (e.g., passwords, API keys) in the code fails."
+      - mode: error
+        name: "SQL queries in code"
+        instructions: "Detecting raw SQL queries in the code instead of using parameterized queries or an ORM fails."
+      - mode: error
+        name: "Magic numbers validation"
+        instructions: "Warns if raw numbers are used in business logic instead of constants (static final) or Enums."
+
+  # Post-review actions and on-demand utilities
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: true
+    custom:
+      - enabled: true
+        name: "Refactor a stream"
+        instructions: "Refactor complex traditional for/while loops using the Java Streams API in an optimal and readable way."
+
+# Interaction Settings and Additional Context
+chat:
+  auto_reply: true
+  art: false
+
+# Project awareness and standards
+knowledge_base:
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "**/CODING_STANDARDS.md"
+      - "**/.coderabbit.rules.md"
+  issues:
+    scope: auto
+  pull_requests:
+    scope: auto
+
+# Comment Generation Settings (Javadocs)
+code_generation:
+  docstrings:
+    language: en-US
+    path_instructions:
+      - path: "**/*.java"
+        instructions: "Generate Javadoc comments for public classes and methods, including parameter descriptions, return values, and exceptions explaining the 'why' and 'how'. Follow standard Javadoc formatting and conventions."
+
+# Automatic enrichment of Issues (Tickets)
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+  planning:
+    enabled: true
+    auto_planning:
+      enabled: true
+      labels: ["bug", "enhancement", "refactor", "feature", "documentation"]

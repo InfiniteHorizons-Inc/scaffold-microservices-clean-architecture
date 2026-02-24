@@ -1,4 +1,4 @@
-package com.infinitehorizons.scaffold.microservices;
+package co.infinitehorizons.scaffold.microservices;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
