@@ -322,3 +322,4 @@ build
 # LLM's
 GEMINI.md
 CLAUDE.md
+.claude

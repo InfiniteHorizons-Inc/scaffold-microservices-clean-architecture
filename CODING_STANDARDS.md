@@ -1,36 +1,53 @@
-# Estándares de Ingeniería y Arquitectura Java (Enterprise)
+# Engineering Standards: Scaffolder Gradle Plugin (Java 25)
 
-Este documento define las reglas estrictas de codificación, diseño y arquitectura para el proyecto. Los revisores automáticos (ej. CodeRabbit) utilizarán estas directivas para evaluar cada Pull Request. El incumplimiento de estas reglas es motivo de bloqueo del PR.
+This document governs the development of the Gradle orchestrator plugin. The goal of this code is to generate microservice ecosystems (Spring Boot/WebFlux) using Clean Architecture and Git Submodules. All pull requests will be evaluated by CodeRabbit under these unbreakable rules to ensure maintainability (ISO/IEC 25010), build-time performance, and scaffolding security.
 
-## 1. Arquitectura y Principios de Diseño
-- **Interfaces sobre Implementaciones:** Programa siempre orientándote a interfaces. Las clases concretas no deben depender de otras clases concretas.
-- **Desacoplamiento y Extensibilidad:** Diseña los componentes para que sean cerrados a la modificación pero abiertos a la extensión (Open/Closed Principle). Para módulos extensibles o sistemas de plugins, utiliza la Inyección de Dependencias o la API `java.util.ServiceLoader` (SPI) para cargar implementaciones dinámicamente.
-- **Inmutabilidad por Defecto:** Las clases de dominio y transferencia de datos deben ser inmutables. Utiliza `record` de Java (Java 25) para DTOs y objetos de valor (Value Objects). Si usas clases tradicionales, haz los campos `private final` y no proveas *setters*.
-- **Principio de Responsabilidad Única (SRP):** Una clase debe tener una, y solo una, razón para cambiar. Si una clase maneja lógica de negocio, acceso a datos y formateo, debe ser refactorizada inmediatamente.
+## 1. Plugin Architecture (Clean Architecture applied to the Scaffolder)
 
-## 2. Convenciones de Código y Limpieza (KISS & DRY)
-- **Nombres Descriptivos:** No uses abreviaturas (`usr`, `ctx`, `mgr`). Usa nombres completos que revelen la intención (`user`, `context`, `manager`).
-- **Límites de Complejidad:**
-    - Los métodos no deben superar las 30 líneas de código (Long Method).
-    - Las clases no deben tener más de 4 dependencias inyectadas. Si tienen más, probablemente violan SRP.
-- **Prohibición de "Magic Numbers/Strings":** Cualquier valor literal (ej. `int maxRetries = 3;` o `if (status.equals("ACTIVE"))`) debe ser extraído a una constante `static final` o a un `Enum`.
-- **Colecciones:** Devuelve siempre colecciones inmutables (`List.copyOf()`, `Collections.unmodifiableList()`) desde los *getters* para evitar mutaciones externas indeseadas.
+The plugin itself MUST follow Clean Architecture principles. Do not mix Gradle logic with build logic.
 
-## 3. Manejo de Errores y Excepciones
-- **Prohibido Silenciar Excepciones:** Nunca dejes un bloque `catch` vacío ni hagas un simple `e.printStackTrace()`. Maneja el error, envuélvelo en una excepción personalizada de negocio, o regístralo a través de un *Logger*.
-- **Excepciones Específicas:** No lances `Exception` o `RuntimeException` genéricas. Crea y lanza excepciones orientadas al dominio (ej. `ResourceNotFoundException`, `InvalidPluginConfigurationException`).
-- **No uses Excepciones para el Flujo de Control:** Las excepciones son para casos excepcionales, no para controlar la lógica `if/else` del negocio.
+- **Domain:** Abstract ecosystem models (`MicroserviceBlueprint`, `RootWorkspace`, `DependencyCatalog`). Zero coupling with the Gradle API or the FileSystem. These must be immutable Java 25 records.
+- **Application Use Cases:** Logic orchestrators (e.g., `GenerateReactiveMicroserviceUseCase`, `LinkGitSubmoduleUseCase`).
+- **Infrastructure:** - **I/O Adapters:** Classes that implement actual file writing (`FileSystemAdapter`).
+- **Git Adapters:** Wrappers for executing terminal commands (`GitCliAdapter`) with timeout control.
+- **Gradle Layer:** Classes that extend `DefaultTask` or `Plugin<Project>` are simple controllers. They only capture user input (`Extension`) and delegate it to Use Cases.
 
-## 4. Rendimiento y Concurrencia
-- **Uso Correcto de Streams:** Utiliza el API de Streams para transformaciones de datos complejas. Sin embargo, para iteraciones críticas de ultra-bajo nivel, prefiere los bucles `for` tradicionales si el profiling demuestra una mejora significativa de rendimiento.
-- **Thread-Safety:** Las clases que se comparten entre múltiples hilos (como los servicios singleton) no deben tener estado mutable. Si el estado es necesario, utiliza clases de `java.util.concurrent.atomic` o estructuras concurrentes (`ConcurrentHashMap`), nunca colecciones estándar no sincronizadas.
-- **Cierre de Recursos:** Todo recurso que implemente `AutoCloseable` (conexiones, streams de archivos, sockets) debe ser instanciado dentro de un bloque `try-with-resources`.
+## 2. Specific Gradle API Rules
 
-## 5. Seguridad
-- **Validación de Entradas (Fail-Fast):** Valida todos los parámetros de entrada al comienzo de los métodos públicos. Usa `Objects.requireNonNull()` o aserciones de validación. Lanza `IllegalArgumentException` inmediatamente si los datos son inválidos.
-- **Loggings Seguros:** Nunca registres (log) información sensible como contraseñas, tokens JWT, PII (Personal Identifiable Information) o números de tarjetas.
-- **Prohibido System.out/err:** El uso de `System.out.println` o `System.err.println` está estrictamente prohibido en código de producción. Utiliza siempre el framework de logging estándar del proyecto (ej. SLF4J).
+- **Configuration Cache Ready:** The plugin MUST be compatible with Gradle's configuration cache.
+- The use of global state or access to the `Project` object during the Execution Phase is prohibited.
+- Only pass necessary data to tasks using `@Input` or `@Internal`.
+- **Lazy Configuration:** Strictly use the `Property<T>` and `Provider<T>` APIs. Never use direct primitive types (`String`, `boolean`) in plugin extensions.
+- **`afterEvaluate` is prohibited:** The use of `project.afterEvaluate {}` is an antipattern in modern Gradle. Model task dependencies correctly using Task Outputs/Inputs.
 
-## 6. Pruebas Unitarias
-- **Patrón Arrange-Act-Assert (AAA):** Todos los tests deben seguir esta estructura visual, separando la preparación de datos, la ejecución del método y la verificación de los resultados.
-- **Pruebas de Casos Extremos:** No pruebes solo el "Happy Path". Es obligatorio incluir pruebas para valores nulos, colecciones vacías y límites numéricos.
+## 3. Code and Template Generation (Scaffolding)
+
+- **String concatenation is prohibited for code:** Never generate `.java` or `.gradle` files by concatenating strings. Use Java Text Blocks (`"""`) in Java 15+ for simple templates, or a structured template engine (FreeMarker, Mustache) for complex files (e.g., generated `build.gradle.kts`).
+- **Mandatory Idempotence:** All generation tasks must be safe to run multiple times.
+- Before writing, check if the file exists.
+- If it exists and has user modifications, DO NOT overwrite it unless there is an explicit `--force` flag.
+- **Strict Paradigm Injection:** Generated code templates must respect the paradigm chosen by the user. If `REACTIVE` is chosen, the generated template must use `Mono/Flux` and prohibit blocking dependencies (such as `spring-boot-starter-web` or `spring-boot-starter-data-jpa`, forcing `R2DBC`).
+
+## 4. Orchestration and Git Submodules
+
+- **Secure Process Execution (Submodules):** When the plugin executes `git submodule add` commands, NEVER use `Runtime.getRuntime().exec()`. Use the modern `ProcessBuilder` API, properly handling output (stdout) and error (stderr) streams to avoid Gradle's main thread deadlocks.
+- **Path Traversal Sanitization:** Microservice names provided by the user in the plugin configuration MUST be validated with regular expressions (e.g., `^[a-z0-9-]+$`). This prevents directory traversal attacks or errors when creating physical submodule paths.
+
+## 5. Error Handling and Developer Experience (DX)
+
+- **Fail-Fast Configuration:** Validates user properties (e.g., base package name, target Java version) during the Gradle configuration phase. `GradleException` with clear and actionable messages if crucial data is missing.
+- **Level Logs:** - Use `project.getLogger()`.
+- Log the start and end of submodule creation at the `LIFECYCLE` level.
+- Log individual file I/O operations at the `DEBUG` or `INFO` level.
+
+## 6. Plugin Testing (TestKit and AST Verification)
+
+The quality of a generator is measured by the quality of what it generates.
+
+- **Unit Tests:** For routing logic and naming (100% coverage).
+- **Gradle TestKit (Functional Tests):** Every main flow must have an integration test using `GradleRunner`. The test must:
+
+1. Create a temporary directory (`@TempDir`).
+2. Run the plugin's scaffolding task.
+3. Verify that the folder structure (Domain, Infrastructure, Application) exists.
+4. **Compile the result:** The test must run an in-memory compiler on the generated Java code to ensure that the templates did not introduce syntax errors. - **Isolation:** Tests that interact with Git should initialize local and temporary `git init` repositories, never affecting the global `~/.gitconfig` configuration of the CI/CD machine.
