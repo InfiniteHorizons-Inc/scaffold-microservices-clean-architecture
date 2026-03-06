@@ -318,3 +318,7 @@ gradle/**
 swagger*.yaml
 # Ignore Gradle build output directory
 build
+
+# LLM's
+GEMINI.md
+CLAUDE.md
